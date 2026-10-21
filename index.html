@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f172a">
+<title>FinFreedom</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root {
+  --bg:#0f172a; --card:#1e293b; --card2:#334155;
+  --accent:#22c55e; --accent2:#3b82f6; --warn:#f59e0b; --danger:#ef4444;
+  --text:#f1f5f9; --muted:#94a3b8; --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));overflow-x:hidden}
+.header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0f172a 85%,transparent);padding:calc(12px + env(safe-area-inset-top)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.header-brand{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.header-brand .brand-title{
+  font-size:1.15rem;font-weight:800;letter-spacing:0.02em;
+  background:linear-gradient(90deg,#4ade80,#22c55e,#86efac);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-fill-color:transparent;
+}
+.header-brand .brand-sub{font-size:0.68rem;color:var(--muted);font-weight:500;margin-top:2px;letter-spacing:0.04em}
+.header h1{font-size:1.05rem;font-weight:700}
+.currency-switch{display:flex;gap:3px;background:var(--card);border-radius:20px;padding:3px}
+.currency-switch button{border:none;background:transparent;color:var(--muted);padding:8px 11px;border-radius:16px;font-size:.78rem;font-weight:700;cursor:pointer;min-height:36px;min-width:44px}
+.currency-switch button.active{background:var(--accent);color:#000}
+.container{padding:0 16px 20px;max-width:480px;margin:0 auto}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)}
+.character-card{background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(34,197,94,.3);text-align:center}
+.avatar{font-size:3.4rem;margin:8px 0;cursor:pointer}
+.status-badge{display:inline-block;padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:700;margin-bottom:6px}
+.status-rat{background:#7f1d1d;color:#fca5a5}
+.status-escape{background:#92400e;color:#fcd34d}
+.status-free{background:#14532d;color:#86efac}
+.status-wealth{background:#1e3a8a;color:#93c5fd}
+.level{font-size:.85rem;color:var(--muted);margin-bottom:4px}
+.progress-bar{height:10px;background:var(--card2);border-radius:5px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#4ade80);border-radius:5px;transition:width .35s}
+.hp-bar{height:16px;background:#3f1a1a;border-radius:8px;overflow:hidden;margin:8px 0}
+.hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:8px;transition:width .25s}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stat{background:rgba(0,0,0,.25);border-radius:12px;padding:10px}
+.stat-label{font-size:.7rem;color:var(--muted)}
+.stat-value{font-size:1.05rem;font-weight:700;margin-top:2px}
+.positive{color:var(--accent)}.negative{color:var(--danger)}
+.section-title{font-size:.9rem;font-weight:600;margin:16px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.btn{border:none;border-radius:12px;padding:12px 16px;font-weight:600;font-size:.9rem;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#000;width:100%}
+.btn-secondary{background:var(--card2);color:var(--text)}
+.btn-small{padding:8px 12px;font-size:.8rem;border-radius:8px}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-icon{min-width:48px;min-height:48px;padding:12px;font-size:1.2rem;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--card2);color:var(--text);border:none;cursor:pointer;touch-action:manipulation;position:relative;z-index:5}
+.btn-icon.danger{color:#fca5a5}
+.btn-icon:active{background:#475569;transform:scale(.93)}
+.action-row{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(15,23,42,.98);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom,0px);z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font-size:.62rem;cursor:pointer;padding:6px 8px;min-width:52px}
+.nav-item.active{color:var(--accent)}
+.nav-item span{font-size:1.3rem}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--card2);background:var(--bg);color:var(--text);font-size:1rem}
+input:focus,select:focus{outline:2px solid var(--accent);border-color:transparent}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--card);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,.04)}
+.item-info{flex:1;min-width:0}
+.item-title{font-size:.85rem;font-weight:600}
+.item-sub{font-size:.7rem;color:var(--muted)}
+.item-amt{font-weight:700}
+.insight{background:linear-gradient(135deg,#1e3a5f,#0f172a);border-left:4px solid var(--accent2);padding:12px 14px;border-radius:0 12px 12px 0;margin-bottom:10px;font-size:.9rem;line-height:1.45}
+.insight.good{border-left-color:var(--accent)}
+.insight.warn{border-left-color:var(--warn)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px;max-height:90vh;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.modal h3{margin-bottom:14px}
+.empty{text-align:center;color:var(--muted);padding:28px 10px;font-size:.9rem}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--card2);font-size:.8rem;font-weight:600;cursor:pointer;border:none;color:var(--muted);min-width:70px}
+.tab.active{background:var(--accent);color:#000}
+.tab.tab-income.active,.tab.tab-income.is-on{background:#14532d;color:#86efac;border:1px solid #22c55e}
+.tab.tab-expense.active,.tab.tab-expense.is-on{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
+.tab.tab-income{color:#86efac}
+.tab.tab-expense{color:#fca5a5}
+.btn-income{background:#22c55e!important;color:#000!important}
+.btn-expense{background:#ef4444!important;color:#fff!important}
+.stat-value.expense-color{color:var(--danger)}
+.item.item-income{border-left:3px solid var(--accent)}
+.item.item-expense{border-left:3px solid var(--danger)}
+.item.item-liability{border-left:3px solid var(--danger)}
+.item.item-asset{border-left:3px solid var(--accent)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:var(--card2)}
+.onboarding,.lock-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top))}
+.hidden{display:none!important}
+.battle-card{background:linear-gradient(135deg,#3f1a1a,#1e1010);border:1px solid rgba(239,68,68,.4);border-radius:var(--radius);padding:14px;margin-bottom:10px;text-align:center;cursor:pointer}
+.enemy-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.enemy-opt{background:var(--bg);border:2px solid var(--card2);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;font-size:.85rem}
+.enemy-opt.selected{border-color:var(--accent);background:rgba(34,197,94,.1)}
+.enemy-opt span{font-size:1.6rem;display:block;margin-bottom:4px}
+.arena{text-align:center;padding:10px 0 20px;position:relative}
+.arena-boss{font-size:5rem;margin:10px 0 6px;cursor:pointer;display:inline-block;user-select:none}
+.arena-boss.hit-simple{animation:hitSimple .25s ease}
+.arena-boss.hit-strong{animation:hitStrong .35s ease}
+.arena-boss.hit-rare{animation:hitRare .4s ease}
+.arena-boss.hit-epic{animation:hitEpic .5s ease}
+.arena-boss.hit-legend{animation:hitLegend .6s ease}
+@keyframes hitSimple{0%{transform:scale(1)}40%{transform:scale(.92) translateX(-4px)}70%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes hitStrong{0%{transform:scale(1)}30%{transform:scale(.85) rotate(-6deg)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes hitRare{0%{transform:scale(1)}25%{transform:scale(.8) rotate(-10deg);filter:drop-shadow(0 0 12px #3b82f6)}50%{transform:scale(1.15)}100%{transform:scale(1);filter:none}}
+@keyframes hitEpic{0%{transform:scale(1)}20%{transform:scale(.75) rotate(-15deg);filter:drop-shadow(0 0 16px #a855f7)}45%{transform:scale(1.2)}100%{transform:scale(1);filter:none}}
+@keyframes hitLegend{0%{transform:scale(1)}15%{transform:scale(.7) rotate(-20deg);filter:drop-shadow(0 0 20px gold)}35%{transform:scale(1.3);filter:drop-shadow(0 0 40px #fbbf24)}100%{transform:scale(1);filter:none}}
+.damage-float{position:absolute;font-weight:800;pointer-events:none;animation:floatUp .8s ease forwards;z-index:10}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px) scale(1.3)}}
+.click-power-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.click-power-btn{border:2px solid var(--card2);background:var(--bg);color:var(--text);border-radius:12px;padding:10px 12px;font-weight:700;font-size:.85rem;cursor:pointer;min-width:56px}
+.click-power-btn.active{border-color:var(--accent);background:rgba(34,197,94,.15);color:var(--accent)}
+.click-power-btn[data-p="5"].active{border-color:#3b82f6;color:#93c5fd}
+.click-power-btn[data-p="10"].active{border-color:#8b5cf6;color:#c4b5fd}
+.click-power-btn[data-p="50"].active{border-color:#a855f7;color:#e9d5ff}
+.click-power-btn[data-p="100"].active{border-color:#f59e0b;color:#fcd34d}
+.loot-screen{text-align:center;padding:20px 10px}
+.loot-emoji{font-size:4rem;margin-bottom:12px;animation:lootPop .6s ease}
+@keyframes lootPop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.loot-title{font-size:1.4rem;font-weight:800;margin-bottom:8px;color:var(--accent)}
+.loot-advice{background:rgba(34,197,94,.1);border-radius:12px;padding:14px;margin:16px 0;font-size:.95rem;line-height:1.5;border:1px solid rgba(34,197,94,.3)}
+.confirm-box{background:var(--card);border-radius:16px;padding:24px;max-width:340px;width:90%;margin:auto;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.confirm-box p{margin:12px 0 20px;font-size:1rem;line-height:1.4}
+.confirm-actions{display:flex;gap:10px}.confirm-actions .btn{flex:1}
+.freedom-timer{background:linear-gradient(135deg,#1e3a5f,#0f172a);border:1px solid rgba(59,130,246,.4);border-radius:var(--radius);padding:14px;text-align:center;margin-bottom:12px}
+.freedom-timer .big{font-size:1.8rem;font-weight:800;color:var(--accent2)}
+.chart-wrap{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:100px;padding-top:8px}
+.chart-bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.chart-bar.exp{background:var(--danger)}
+.chart-labels{display:flex;gap:4px;margin-top:4px}
+.chart-labels span{flex:1;text-align:center;font-size:.6rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ach{background:var(--card);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.05);opacity:.45}
+.ach.unlocked{opacity:1;border-color:rgba(34,197,94,.4)}
+.ach .em{font-size:1.8rem}
+.ach .nm{font-size:.75rem;font-weight:600;margin-top:4px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:20px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted)}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
+.pin-pad button{padding:18px;font-size:1.4rem;font-weight:700;border-radius:50%;border:none;background:var(--card2);color:var(--text);cursor:pointer;aspect-ratio:1}
+.profile-list .item{cursor:pointer}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid var(--accent);padding:12px 20px;border-radius:12px;z-index:600;font-size:.9rem;display:none;white-space:nowrap;max-width:90%}
+.toast.show{display:block;animation:fadeIn .2s}
+
+.page-bottom-actions{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(52px + env(safe-area-inset-bottom,0px));
+  z-index:90;padding:10px 0;display:flex;justify-content:center;align-items:center;
+  width:100%;max-width:480px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(15,23,42,.92) 40%);
+}
+.page-bottom-actions > *{pointer-events:auto}
+.page-bottom-actions .btn-asset-plus{
+  flex:none;width:64px;height:64px;min-height:64px;border:none;border-radius:50%;
+  font-weight:700;font-size:2rem;line-height:1;padding:0;
+  background:var(--accent);color:#000;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.tx-bottom-bar{
+  position:fixed;left:0;right:0;bottom:calc(52px + env(safe-area-inset-bottom,0px));
+  z-index:90;padding:10px 16px;display:flex;gap:10px;justify-content:center;
+  background:linear-gradient(180deg,transparent,rgba(15,23,42,.92) 30%);
+  max-width:480px;margin:0 auto;
+}
+.tx-bottom-bar .btn-add-tx{flex:2;min-height:48px;border-radius:14px;border:none;background:var(--accent);color:#000;font-size:1.5rem;font-weight:700;cursor:pointer}
+.tx-bottom-bar .btn-qr{flex:1;min-height:48px;max-width:72px;border-radius:14px;border:none;background:var(--card2);color:var(--text);font-size:1.25rem;cursor:pointer}
+.goals-header{
+  text-align:center;margin:12px 0 8px;width:100%;
+}
+.goals-header h2{
+  font-size:1.35rem;font-weight:800;letter-spacing:0.02em;width:100%;text-align:center;
+  background:linear-gradient(90deg,#fbbf24,#f59e0b,#fcd34d);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  margin:0;
+}
+/* + по центру экрана (горизонталь + вертикаль) */
+.btn-goal-add{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:80;
+  width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(145deg,#334155,#1e293b);color:#fcd34d;
+  font-size:2.4rem;font-weight:300;line-height:0;padding:0;
+  box-shadow:0 6px 28px rgba(245,158,11,.35),inset 0 1px 0 rgba(255,255,255,.08);
+  display:none;align-items:center;justify-content:center;
+}
+.btn-goal-add:active{transform:translate(-50%,-50%) scale(.95)}
+.btn-goal-add.visible{display:flex}
+.page-tx .list,.page-assets .list,.page-goals .list{padding-bottom:70px}
+.yield-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)}
+.yield-results{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.yield-results .stat{background:rgba(0,0,0,.25);border-radius:10px;padding:10px}
+
+.qr-video-wrap{
+  position:relative;width:100%;aspect-ratio:1;max-height:320px;
+  background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px;
+}
+.qr-video-wrap video,.qr-video-wrap canvas{
+  width:100%;height:100%;object-fit:cover;
+}
+.qr-hint{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:10px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<div id="lock-screen" class="lock-screen hidden">
+  <h2 style="text-align:center;margin-bottom:8px">🔒 Вход</h2>
+  <p style="text-align:center;color:var(--muted);margin-bottom:8px" id="lock-name"></p>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="pin-pad" id="pin-pad"></div>
+  <p style="text-align:center;color:var(--danger);margin-top:12px;font-size:.85rem;min-height:20px" id="pin-error"></p>
+</div>
+
+<div id="onboarding" class="onboarding hidden">
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:1.75rem;font-weight:800;letter-spacing:0.02em;background:linear-gradient(90deg,#4ade80,#22c55e,#86efac);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent">FinFreedom</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;letter-spacing:0.04em">by Nikichev</div>
+  </div>
+  <h2 style="font-size:1.15rem;margin-bottom:6px">Новый профиль</h2>
+  <p style="color:var(--muted);margin-bottom:20px;font-size:0.9rem">Всё основано на реальной жизни</p>
+  <div class="form-group"><label>Имя</label><input type="text" id="ob-name" placeholder="Имя"></div>
+  <div class="form-group"><label>Средняя зарплата (BYN)</label><input type="number" id="ob-salary" placeholder="введите среднюю зарплату" inputmode="decimal"></div>
+  <div class="form-group"><label>Чистые активы (BYN)</label><input type="number" id="ob-networth" placeholder="накопления − долги" inputmode="decimal"></div>
+  <p style="font-size:0.72rem;color:var(--muted);margin:-6px 0 12px;line-height:1.35">Сколько у тебя сейчас «своих» денег: накопления, вклады, карта − минус долги и кредиты. Если не уверен — поставь 0, добавишь позже.</p>
+  <div class="form-group"><label>PIN (4 цифры, необязательно)</label><input type="password" id="ob-pin" maxlength="4" inputmode="numeric" placeholder="****"></div>
+  <button class="btn btn-primary" onclick="finishOnboarding()">Создать профиль →</button>
+</div>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-title">FinFreedom</div>
+    <div class="brand-sub">by Nikichev</div>
+  </div>
+  <div class="currency-switch" id="currencySwitch">
+    <button data-cur="BYN" class="active">BYN</button>
+    <button data-cur="USD">USD</button>
+    <button data-cur="EUR">EUR</button>
+    <button data-cur="USDT">USDT</button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="page-home" class="page active">
+    <div class="character-card card">
+      <div class="avatar" id="avatar" onclick="openModal('profile')">🧑‍💼</div>
+      <div class="level" id="char-level">Уровень 1</div>
+      <div class="status-badge status-rat" id="char-status">Крысиные бега</div>
+      <div style="font-size:.85rem;color:var(--muted)" id="char-name">Твой путь</div>
+      <div style="font-size:.75rem;color:var(--accent2);font-style:italic;display:none;margin-bottom:6px" id="char-motto"></div>
+      <div class="progress-bar"><div class="progress-fill" id="freedom-progress" style="width:0%"></div></div>
+      <div style="font-size:.75rem;color:var(--muted)" id="freedom-text">0% расходов закрыто пассивом</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">Капитал</div><div class="stat-value" id="stat-networth">0</div></div>
+        <div class="stat"><div class="stat-label">Поток</div><div class="stat-value" id="stat-cashflow">0</div></div>
+        <div class="stat"><div class="stat-label">Пассив</div><div class="stat-value positive" id="stat-passive">0</div></div>
+        <div class="stat"><div class="stat-label">Расходы</div><div class="stat-value" id="stat-expenses">0</div></div>
+      </div>
+    </div>
+    <div class="freedom-timer" id="freedom-timer">
+      <div style="font-size:.8rem;color:var(--muted)">До финансовой свободы</div>
+      <div class="big" id="freedom-days">—</div>
+      <div style="font-size:.75rem;color:var(--muted)" id="freedom-hint">нужен стабильный кэшфлоу</div>
+    </div>
+    <div id="battles-home"></div>
+    <div class="section-title">Мотивация</div>
+    <div id="insights"></div>
+    <div class="section-title">Быстрые действия</div>
+    <div class="row">
+      <button class="btn btn-secondary" style="border:1px solid #22c55e;color:#86efac" onclick="openModal('tx')">+ Операция</button>
+      <button class="btn btn-secondary" style="border:1px solid #3b82f6;color:#93c5fd" onclick="openModal('asset')">+ Актив</button>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="undoLast()">↩ Отменить последнее</button>
+  </div>
+
+  <div id="page-tx" class="page">
+    <div class="tabs">
+      <button class="tab active" data-filter="all" onclick="filterTx('all')">Все</button>
+      <button class="tab tab-income" data-filter="income" onclick="filterTx('income')">Доходы</button>
+      <button class="tab tab-expense" data-filter="expense" onclick="filterTx('expense')">Расходы</button>
+      <button class="tab" data-filter="recurring" onclick="filterTx('recurring')">🔁</button>
+    </div>
+    <div class="list" id="tx-list"></div>
+    <div class="tx-bottom-bar">
+      <button type="button" class="btn-add-tx" onclick="openModal('tx')" title="Добавить">+</button>
+      <button type="button" class="btn-qr" onclick="openQrScan()" title="Скан QR чека">▦</button>
+    </div>
+  </div>
+
+  <div id="page-assets" class="page">
+    <div id="assets-summary" class="card" style="margin-bottom:12px"></div>
+    <div class="list" id="asset-list"></div>
+    <div class="page-bottom-actions" id="assets-bottom-actions">
+      <button type="button" class="btn-asset-plus" onclick="openModal('asset')">+</button>
+    </div>
+  </div>
+
+  <div id="page-goals" class="page">
+    <div class="goals-header">
+      <h2>Цели и битвы</h2>
+    </div>
+    <div class="list" id="goal-list"></div>
+  </div>
+  <button type="button" class="btn-goal-add" id="btn-goal-add" onclick="openModal('goal')" title="Добавить">+</button>
+
+  <div id="page-more" class="page">
+    <div class="section-title">Ставка для «до свободы»</div>
+    <div class="yield-card">
+      <div class="form-group"><label>% годовых (прогноз)</label>
+        <input type="number" id="freedom-rate-input" inputmode="decimal" placeholder="8" onchange="saveFreedomRate()" oninput="saveFreedomRate()">
+      </div>
+      <p style="font-size:.72rem;color:var(--muted);line-height:1.35">От этой ставки считается, сколько капитала нужно и сколько месяцев до свободы. На пассив по активам не влияет.</p>
+    </div>
+    <div class="section-title">Калькулятор доходности</div>
+    <div class="yield-card">
+      <div class="form-group"><label>Сумма</label><input type="number" id="yield-sum" inputmode="decimal" placeholder="Введите вашу сумму" oninput="calcYield()"></div>
+      <div class="form-group"><label>% годовых</label><input type="number" id="yield-rate" inputmode="decimal" placeholder="Введите ваш процент" oninput="calcYield()"></div>
+      <div class="yield-results">
+        <div class="stat"><div class="stat-label">В год</div><div class="stat-value positive" id="yield-year">—</div></div>
+        <div class="stat"><div class="stat-label">В месяц</div><div class="stat-value positive" id="yield-month">—</div></div>
+        <div class="stat"><div class="stat-label">В день</div><div class="stat-value positive" id="yield-day">—</div></div>
+        <div class="stat"><div class="stat-label">В час</div><div class="stat-value positive" id="yield-hour">—</div></div>
+      </div>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.35">Простой процент: сумма × % / 100. Не сложный процент.</p>
+    </div>
+    <div class="section-title">Графики (30 дней)</div>
+    <div class="chart-wrap">
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Доходы vs расходы</div>
+      <div class="chart-bars" id="chart-bars"></div>
+      <div class="chart-labels" id="chart-labels"></div>
+    </div>
+    <div class="section-title">Бюджеты по категориям</div>
+    <div id="budget-list" class="list"></div>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="openModal('budget')">+ Лимит категории</button>
+
+    <div class="section-title">Достижения</div>
+    <div class="ach-grid" id="ach-grid"></div>
+
+    <div class="section-title">Анализ</div>
+    <div id="advice-content"></div>
+
+    <div class="section-title">Профили</div>
+    <div class="list profile-list" id="profile-list"></div>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="startNewProfile()">+ Новый профиль</button>
+
+    <div class="section-title">Данные</div>
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn btn-secondary" onclick="exportJSON()">Бэкап JSON</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Импорт</button>
+    </div>
+    <input type="file" id="import-file" accept=".json,.csv" style="display:none" onchange="importFile(event)">
+    <div style="font-size:.8rem;color:var(--muted);margin-top:8px">
+      <div id="rates-display"></div>
+      <button class="btn btn-small btn-secondary" onclick="fetchRates(true)" style="margin-top:8px">Обновить курсы</button>
+      <button class="btn btn-small btn-secondary" onclick="resetAllData()" style="margin-top:8px">Сбросить всё</button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-item active" data-page="home" onclick="showPage('home')"><span>🏠</span>Главная</button>
+  <button class="nav-item" data-page="tx" onclick="showPage('tx')"><span>💸</span>Операции</button>
+  <button class="nav-item" data-page="assets" onclick="showPage('assets')"><span>🏦</span>Активы</button>
+  <button class="nav-item" data-page="goals" onclick="showPage('goals')"><span>⚔️</span>Цели</button>
+  <button class="nav-item" data-page="more" onclick="showPage('more')"><span>📊</span>Ещё</button>
+</nav>
+
+<div class="modal-overlay" id="modal"><div class="modal" id="modal-content"></div></div>
+<div class="modal-overlay" id="confirm-overlay" style="z-index:400;align-items:center;justify-content:center;padding:20px">
+  <div class="confirm-box" id="confirm-box"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const AVG_SALARY = 3113;
+const DEFAULT_RATES = {USD:3.01,EUR:3.39,USDT:3.01};
+const ENEMIES = {
+  rat:{name:'Крыса',emoji:'🐀'}, hamster:{name:'Хомяк',emoji:'🐹'},
+  credit:{name:'Долговой монстр',emoji:'💳'}, infl:{name:'Инфляция',emoji:'📉'}, eater:{name:'Пожиратель',emoji:'🍔'}
+};
+const AVATARS = ['🧑‍💼','👨‍💻','👩‍💻','🧔','👩','🦸','🧙','🥷','🦊','🐺','🦁','🐻','🐯','🦅','🐉','🤖','👑','💼','🎯','🚀','💎','🔥','⚡','🌟','🐱','🐶','🐼','🐨','🐸','🦄','👻','🎃','😎','🤓','💪','🧠'];
+const LOOT = [
+  'Победа! Следующий шаг — реальный актив, который платит тебе.',
+  'Босс пал. Автоматизируй перевод на накопления в день зарплаты.',
+  'Отлично! Богатые покупают активы — ты на верном пути.',
+  'Каждый побеждённый враг — привычка. Держи streak откладывания.',
+  'Лут: совет — сначала подушка 3–6 мес, потом риск.',
+  'Ты сильнее крысиных бегов. Наращивай пассив системно.'
+];
+const ACHIEVEMENTS = [
+  {id:'first_tx', name:'Первая запись', em:'📝', check:s=>s.transactions.length>=1},
+  {id:'first_asset', name:'Первый актив', em:'🏦', check:s=>s.assets.some(a=>a.type!=='liability')},
+  {id:'first_passive', name:'Пассив появился', em:'💰', check:s=>calcFrom(s).passive>0},
+  {id:'first_battle', name:'Первая битва', em:'⚔️', check:s=>s.goals.some(g=>g.isBattle)},
+  {id:'boss_kill', name:'Босс повержен', em:'🏆', check:s=>s.goals.some(g=>g.defeated)},
+  {id:'save_10', name:'Копилка 10%', em:'🐷', check:s=>{const c=calcFrom(s);return c.income>0&&(c.income-c.expense)/c.income>=0.1}},
+  {id:'buffer_3', name:'Подушка 3 мес', em:'🛡', check:s=>{const c=calcFrom(s);return c.expensesTotal>0&&c.netWorth/c.expensesTotal>=3}},
+  {id:'free_20', name:'20% свободы', em:'🚀', check:s=>calcFrom(s).freedomPct>=20},
+  {id:'free_50', name:'50% свободы', em:'🦅', check:s=>calcFrom(s).freedomPct>=50},
+  {id:'free_100', name:'Свобода!', em:'👑', check:s=>calcFrom(s).freedomPct>=100},
+];
+
+let app = { profiles:{}, activeId:null, rates:{...DEFAULT_RATES}, ratesUpdated:null };
+let undoStack = [];
+let selectedEnemy='rat', goalMode='normal', clickPower=1, arenaIdx=-1, pinBuffer='';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function emptyProfile(name){
+  return { id:uid(), name:name||'Игрок', salary:0, avatar:'', motto:'', pin:'', currency:'BYN', annualRate:8,
+    transactions:[], assets:[], goals:[], budgets:[], achievements:[], history:[], createdAt:Date.now() };
+}
+function S(){ return app.profiles[app.activeId]; }
+
+function loadApp(){
+  try{
+    const raw = localStorage.getItem('ff_app_v5');
+    if(raw){ const d=JSON.parse(raw); app={...app,...d}; if(!app.rates) app.rates={...DEFAULT_RATES}; }
+  }catch(e){}
+  // migrate old single profile
+  try{
+    const old = localStorage.getItem('ff_state_v4');
+    if(old && !Object.keys(app.profiles).length){
+      const o=JSON.parse(old);
+      const p=emptyProfile(o.name||'Игрок');
+      Object.assign(p,{salary:o.salary||0,avatar:o.avatar||'',motto:o.motto||'',
+        transactions:o.transactions||[],assets:o.assets||[],goals:o.goals||[]});
+      app.profiles[p.id]=p; app.activeId=p.id;
+      if(o.rates) app.rates=o.rates;
+      saveApp();
+    }
+  }catch(e){}
+}
+function saveApp(){ localStorage.setItem('ff_app_v5', JSON.stringify(app)); }
+
+function pushUndo(label, snapshot){
+  undoStack.push({label, snapshot:JSON.parse(JSON.stringify(snapshot)), t:Date.now()});
+  if(undoStack.length>20) undoStack.shift();
+}
+function undoLast(){
+  if(!undoStack.length){ toast('Нечего отменять'); return; }
+  const u=undoStack.pop();
+  app.profiles[app.activeId]=u.snapshot;
+  saveApp(); renderAll(); toast('Отменено: '+u.label);
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function showConfirm(msg, onYes){
+  const ov=document.getElementById('confirm-overlay');
+  const box=document.getElementById('confirm-box');
+  box.innerHTML='<p>'+msg+'</p><div class="confirm-actions"><button class="btn btn-secondary" id="c-no">Отмена</button><button class="btn btn-primary" id="c-yes" style="background:var(--danger);color:#fff">Да</button></div>';
+  ov.classList.add('show');
+  document.getElementById('c-no').onclick=()=>ov.classList.remove('show');
+  document.getElementById('c-yes').onclick=()=>{ov.classList.remove('show'); onYes();};
+  ov.onclick=e=>{ if(e.target===ov) ov.classList.remove('show'); };
+}
+
+async function fetchRates(force){
+  if(!force && app.ratesUpdated && Date.now()-app.ratesUpdated<21600000){ updateRates(); return; }
+  try{
+    const res=await fetch('https://api.nbrb.by/exrates/rates?periodicity=0');
+    const data=await res.json();
+    const usd=data.find(c=>c.Cur_Abbreviation==='USD');
+    const eur=data.find(c=>c.Cur_Abbreviation==='EUR');
+    if(usd) app.rates.USD=usd.Cur_OfficialRate;
+    if(eur) app.rates.EUR=eur.Cur_OfficialRate;
+    app.rates.USDT=app.rates.USD;
+    app.ratesUpdated=Date.now(); saveApp(); updateRates(); renderAll();
+  }catch(e){ updateRates(); }
+}
+function updateRates(){
+  const el=document.getElementById('rates-display'); if(!el) return;
+  const d=app.ratesUpdated?new Date(app.ratesUpdated).toLocaleString('ru-RU'):'—';
+  el.innerHTML=`1 USD=<b>${app.rates.USD.toFixed(4)}</b> · 1 EUR=<b>${app.rates.EUR.toFixed(4)}</b><br><span style="font-size:.75rem">${d} · НБРБ</span>`;
+}
+
+function toBYN(a,c){ return (!c||c==='BYN')?a:a*(app.rates[c]||1); }
+function fromBYN(a,c){ return (!c||c==='BYN')?a:a/(app.rates[c]||1); }
+function format(a){
+  const s=S(); if(!s) return '0';
+  const cur=s.currency||'BYN';
+  const v=fromBYN(a,cur);
+  const sym={BYN:'Br',USD:'$',EUR:'€',USDT:'₮'}[cur]||'';
+  return sym+v.toLocaleString('ru-RU',{maximumFractionDigits:Math.abs(v)>=1000?0:2});
+}
+
+function calcFrom(s){
+  let income=s.salary||0, expense=0, passive=0, assetsTotal=0, liabilities=0;
+  const now=Date.now(), monthAgo=now-30*86400000;
+  const defaultRate = (s.annualRate!=null && s.annualRate!=='') ? Number(s.annualRate) : 8;
+  s.transactions.forEach(t=>{
+    const b=toBYN(t.amount,t.currency||'BYN');
+    if(t.recurring){
+      if(t.type==='income') income+=b; else expense+=b;
+    } else if((t.date||0)>=monthAgo){
+      if(t.type==='income') income+=b; else expense+=b;
+    }
+  });
+  let rateSum=0, rateWeight=0;
+  s.assets.forEach(a=>{
+    const b=toBYN(a.value,a.currency||'BYN');
+    if(a.type==='liability'){ liabilities+=b; return; }
+    assetsTotal+=b;
+    // Пассив только если явно указан % у актива или фикс. пассив / мес
+    // Накопления без % НЕ дают пассив
+    if(a.passive && Number(a.passive)>0){
+      passive += toBYN(Number(a.passive), a.currency||'BYN');
+    } else if(a.rate!=null && a.rate!=='' && Number(a.rate)>0){
+      const r=Number(a.rate);
+      passive += b * (r/100) / 12;
+      rateSum += r * b; rateWeight += b;
+    }
+  });
+  const netWorth=assetsTotal-liabilities;
+  const cashflow=income-expense;
+  const expensesTotal=expense;
+  const freedomPct=expensesTotal>0?Math.min(100,(passive/expensesTotal)*100):0;
+  // Прогноз «до свободы» — только ставка профиля (задаётся во вкладке Ещё)
+  const avgRate = defaultRate>0 ? defaultRate : 8;
+  const capitalNeeded = expensesTotal>0 ? (expensesTotal * 12) / (avgRate/100) : 0;
+  return {income,expense,passive,netWorth,cashflow,expensesTotal,freedomPct,assetsTotal,liabilities,avgRate,capitalNeeded};
+}
+function calc(){ return calcFrom(S()); }
+
+function getStatus(c){
+  if(c.freedomPct>=100) return {key:'wealth',label:'Богатство',level:Math.floor(c.freedomPct/20)+5};
+  if(c.freedomPct>=50) return {key:'free',label:'Финансовая свобода',level:Math.floor(c.freedomPct/20)+3};
+  if(c.freedomPct>=15) return {key:'escape',label:'Вырываюсь',level:Math.floor(c.freedomPct/10)+2};
+  return {key:'rat',label:'Крысиные бега',level:Math.max(1,Math.floor(c.freedomPct/5)+1)};
+}
+
+function daysToFreedom(c){
+  // Всё в эквиваленте месяцев: сколько ещё копить капитал под % годовых
+  if(c.expensesTotal<=0) return null;
+  if(c.passive>=c.expensesTotal || c.freedomPct>=100) return 0;
+  // Нужный капитал = расходы × 12 / (ставка/100)
+  const rate = c.avgRate>0 ? c.avgRate : 8;
+  const capitalNeeded = (c.expensesTotal * 12) / (rate/100);
+  const capitalGap = Math.max(0, capitalNeeded - Math.max(0, c.netWorth));
+  if(capitalGap<=0) return 0;
+  if(c.cashflow<=0) return null;
+  // Откладываем весь положительный кэшфлоу в капитал (можно сменить на 50%)
+  const monthlyInvest = c.cashflow;
+  if(monthlyInvest<=0) return null;
+  return Math.ceil(capitalGap / monthlyInvest);
+}
+
+function checkAchievements(){
+  const s=S(); if(!s) return;
+  let newOnes=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(s.achievements.includes(a.id)) return;
+    if(a.check(s)){ s.achievements.push(a.id); newOnes.push(a); }
+  });
+  if(newOnes.length){ saveApp(); toast('🏆 '+newOnes.map(a=>a.name).join(', ')); }
+}
+
+function renderAll(){
+  const s=S(); if(!s) return;
+  const c=calc(), st=getStatus(c);
+  document.getElementById('avatar').textContent=s.avatar||'🧑‍💼';
+  document.getElementById('char-level').textContent='Уровень '+st.level;
+  document.getElementById('char-status').textContent=st.label;
+  document.getElementById('char-status').className='status-badge status-'+st.key;
+  document.getElementById('char-name').textContent=s.name||'Твой путь';
+  const m=document.getElementById('char-motto');
+  m.textContent=s.motto||''; m.style.display=s.motto?'block':'none';
+  document.getElementById('freedom-progress').style.width=c.freedomPct+'%';
+  document.getElementById('freedom-text').textContent=c.freedomPct.toFixed(0)+'% расходов закрыто пассивом';
+  document.getElementById('stat-networth').textContent=format(c.netWorth);
+  document.getElementById('stat-networth').className='stat-value '+(c.netWorth>=0?'positive':'negative');
+  document.getElementById('stat-cashflow').textContent=format(c.cashflow);
+  document.getElementById('stat-cashflow').className='stat-value '+(c.cashflow>=0?'positive':'negative');
+  document.getElementById('stat-passive').textContent=format(c.passive);
+  document.getElementById('stat-expenses').textContent=format(c.expensesTotal);
+  document.getElementById('stat-expenses').className='stat-value expense-color';
+
+  const days=daysToFreedom(c);
+  const daysEl=document.getElementById('freedom-days');
+  const hint=document.getElementById('freedom-hint');
+  if(c.expensesTotal<=0){
+    daysEl.textContent='—';
+    hint.textContent='Добавь расходы, чтобы рассчитать';
+  } else if(days===0 || c.freedomPct>=100){
+    daysEl.textContent='🎉 Свобода!';
+    hint.textContent='пассив покрывает расходы';
+  } else if(days===null){
+    daysEl.textContent='—';
+    hint.textContent='Нужен +кэшфлоу, чтобы копить капитал';
+  } else {
+    daysEl.textContent='~'+days+' мес';
+    hint.textContent='нужно ещё '+format(Math.max(0,c.capitalNeeded-Math.max(0,c.netWorth)))+' при '+c.avgRate+'% годовых';
+  }
+
+  // currency buttons
+  document.querySelectorAll('#currencySwitch button').forEach(b=>b.classList.toggle('active',b.dataset.cur===(s.currency||'BYN')));
+  const fri=document.getElementById('freedom-rate-input');
+  if(fri && document.activeElement!==fri) fri.value = s.annualRate!=null ? s.annualRate : 8;
+
+  renderBattles(); renderInsights(c); renderTx(); renderAssets(c); renderGoals();
+  renderCharts(); renderBudgets(); renderAchievements(); renderProfiles(); renderAdvice(c); updateRates();
+  checkAchievements();
+}
+
+function renderBattles(){
+  const box=document.getElementById('battles-home');
+  const s=S();
+  const battles=s.goals.filter(g=>g.isBattle&&!g.defeated);
+  if(!battles.length){ box.innerHTML=''; return; }
+  box.innerHTML=battles.map(g=>{
+    const i=s.goals.indexOf(g);
+    const target=toBYN(g.target,g.currency||'BYN'), current=toBYN(g.current||0,g.currency||'BYN');
+    const hpLeft=Math.max(0,target-current), hpPct=target>0?Math.max(0,hpLeft/target*100):0;
+    const e=ENEMIES[g.enemy]||ENEMIES.rat;
+    return `<div class="battle-card" onclick="openArena(${i})">
+      <div style="font-size:2.4rem">${e.emoji}</div>
+      <div style="font-weight:700">${e.name}</div>
+      <div style="font-size:.8rem;color:var(--muted)">${g.name}</div>
+      <div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%"></div></div>
+      <div style="font-size:.8rem">HP: ${format(hpLeft)} / ${format(target)}</div>
+      <div style="font-size:.75rem;color:var(--accent);margin-top:6px">В бой →</div>
+    </div>`;
+  }).join('');
+}
+
+function renderInsights(c){
+  const s=S(); const msgs=[]; const name=s.name||'Ты';
+  const sr=c.income>0?((c.income-c.expense)/c.income*100):0;
+  const mb=c.expensesTotal>0?c.netWorth/c.expensesTotal:0;
+  if(s.salary>=AVG_SALARY*1.5) msgs.push({t:`🔥 ${name}, зарплата в 1.5+ раза выше средней РБ (~${AVG_SALARY} BYN)`,g:1});
+  else if(s.salary>AVG_SALARY) msgs.push({t:`💪 Зарплата выше средней по Беларуси`,g:1});
+  if(sr>=30) msgs.push({t:`🏆 Копишь ≈${sr.toFixed(0)}% — топ-уровень дисциплины`,g:1});
+  else if(sr>=15) msgs.push({t:`👏 ≈${sr.toFixed(0)}% сбережений — лучше большинства`,g:1});
+  if(c.freedomPct>=50) msgs.push({t:`🚀 ${c.freedomPct.toFixed(0)}% расходов закрыто пассивом`,g:1});
+  else if(c.passive>0) msgs.push({t:`Пассив ${format(c.passive)}/мес уже работает на тебя`,g:1});
+  else msgs.push({t:`Пассива пока нет — начни с депозита или дивидендов`,g:0});
+  if(mb>=6) msgs.push({t:`🛡 Подушка ≈${mb.toFixed(1)} мес — можно инвестировать смелее`,g:1});
+  else if(mb>=3) msgs.push({t:`Подушка ≈${mb.toFixed(1)} мес. Цель — 6`,g:1});
+  if(c.cashflow>0) msgs.push({t:`Кэшфлоу +${format(c.cashflow)}/мес. Направляй часть в активы`,g:1});
+  else if(c.cashflow<0) msgs.push({t:`Кэшфлоу отрицательный. Сначала останови утечку`,g:0});
+  const pool=msgs.sort(()=>Math.random()-0.5).slice(0,3);
+  document.getElementById('insights').innerHTML=pool.map(m=>`<div class="insight ${m.g?'good':''}">${m.t}</div>`).join('');
+}
+
+function renderTx(filter){
+  filter=filter||'all';
+  const s=S(); const list=document.getElementById('tx-list');
+  let items=[...s.transactions].sort((a,b)=>(b.date||0)-(a.date||0));
+  if(filter==='income') items=items.filter(t=>t.type==='income');
+  if(filter==='expense') items=items.filter(t=>t.type==='expense');
+  if(filter==='recurring') items=items.filter(t=>t.recurring);
+  if(!items.length){ list.innerHTML='<div class="empty">Нет операций</div>'; return; }
+  list.innerHTML=items.map(t=>{
+    const i=s.transactions.indexOf(t);
+    const byn=toBYN(t.amount,t.currency||'BYN');
+    return `<div class="item ${t.type==='income'?'item-income':'item-expense'}">
+      <div class="item-info">
+        <div class="item-title">${t.type==='income'?'🟢':'🔴'} ${t.category||t.type} ${t.recurring?'🔁':''}</div>
+        <div class="item-sub">${t.date?new Date(t.date).toLocaleDateString('ru-RU'):'—'}${t.note?' · '+t.note:''}</div>
+      </div>
+      <div class="action-row">
+        <div class="item-amt ${t.type==='income'?'positive':'negative'}">${t.type==='income'?'+':'−'}${format(byn)}</div>
+        <button class="btn-icon danger" type="button" data-act="del-tx" data-i="${i}">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterTx(f){
+  document.querySelectorAll('#page-tx .tab').forEach(t=>{
+    const on = t.dataset.filter===f;
+    t.classList.toggle('active', on);
+    t.classList.toggle('is-on', on);
+  });
+  renderTx(f);
+}
+
+function renderAssets(c){
+  const s=S();
+  document.getElementById('assets-summary').innerHTML=`<div class="stats-grid">
+    <div class="stat"><div class="stat-label">Активы</div><div class="stat-value positive">${format(c.assetsTotal)}</div></div>
+    <div class="stat"><div class="stat-label">Долги</div><div class="stat-value negative">${format(c.liabilities)}</div></div>
+  </div>`;
+  const list=document.getElementById('asset-list');
+  if(!s.assets.length){ list.innerHTML='<div class="empty">Нет активов</div>'; return; }
+  list.innerHTML=s.assets.map((a,i)=>{
+    const byn=toBYN(a.value,a.currency||'BYN');
+    return `<div class="item ${a.type==='liability'?'item-liability':'item-asset'}">
+      <div class="item-info">
+        <div class="item-title">${a.type==='liability'?'🔴':'🟢'} ${a.name} ${a.type==='liability'?'<span class="badge">долг</span>':''}</div>
+        <div class="item-sub">${a.currency||'BYN'}${a.rate!=null?' · '+a.rate+'% годовых':''}${a.passive?' · фикс. +'+format(toBYN(a.passive,a.currency||'BYN'))+'/мес':''}</div>
+      </div>
+      <div class="action-row">
+        <div class="item-amt ${a.type==='liability'?'negative':'positive'}">${format(byn)}</div>
+        <button class="btn-icon danger" type="button" data-act="del-asset" data-i="${i}">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderGoals(){
+  const s=S(); const list=document.getElementById('goal-list');
+  if(!s.goals.length){ list.innerHTML='<div class="empty">Поставь цель или вызови врага ⚔️</div>'; return; }
+  list.innerHTML=s.goals.map((g,i)=>{
+    const target=toBYN(g.target,g.currency||'BYN'), current=toBYN(g.current||0,g.currency||'BYN');
+    const pct=target>0?Math.min(100,current/target*100):0;
+    const defeated=g.isBattle&&(g.defeated||current>=target);
+    if(g.isBattle){
+      const e=ENEMIES[g.enemy]||ENEMIES.rat;
+      const hpLeft=Math.max(0,target-current), hpPct=target>0?Math.max(0,hpLeft/target*100):0;
+      return `<div class="item" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span style="font-size:1.3rem">${e.emoji}</span> <b>${e.name}</b> ${defeated?'<span class="badge" style="background:#14532d;color:#86efac">Побеждён</span>':''}</div>
+          <div class="action-row">
+            <button class="btn-icon" type="button" data-act="reset-goal" data-i="${i}">↺</button>
+            <button class="btn-icon danger" type="button" data-act="del-goal" data-i="${i}">✕</button>
+          </div>
+        </div>
+        <div class="item-sub" style="margin:4px 0">${g.name}</div>
+        <div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%"></div></div>
+        <div style="font-size:.8rem;display:flex;justify-content:space-between"><span>HP: ${format(hpLeft)}</span><span>${format(current)}/${format(target)}</span></div>
+        ${!defeated?`<button class="btn btn-small btn-primary" style="margin-top:8px" onclick="openArena(${i})">⚔️ В бой</button>`:`<div style="text-align:center;color:var(--accent);margin-top:8px;font-weight:700">🏆 Победа</div>`}
+      </div>`;
+    }
+    return `<div class="item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between">
+        <div class="item-title">${g.name}</div>
+        <div class="action-row">
+          <button class="btn-icon" type="button" data-act="reset-goal" data-i="${i}">↺</button>
+          <button class="btn-icon danger" type="button" data-act="del-goal" data-i="${i}">✕</button>
+        </div>
+      </div>
+      <div class="item-sub">${format(current)} / ${format(target)}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <button class="btn btn-small btn-secondary" style="margin-top:8px" onclick="arenaIdx=${i};openModal('progress')">+ Прогресс</button>
+    </div>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const s=S(); const bars=document.getElementById('chart-bars'); const labels=document.getElementById('chart-labels');
+  if(!bars) return;
+  // last 6 weeks income/expense aggregated
+  const weeks=[];
+  for(let w=5;w>=0;w--){
+    const end=Date.now()-w*7*86400000, start=end-7*86400000;
+    let inc=0, exp=0;
+    s.transactions.forEach(t=>{
+      if(t.recurring) return;
+      if(t.date>=start && t.date<end){
+        const b=toBYN(t.amount,t.currency||'BYN');
+        if(t.type==='income') inc+=b; else exp+=b;
+      }
+    });
+    weeks.push({inc,exp,label:new Date(start).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})});
+  }
+  const max=Math.max(1,...weeks.flatMap(w=>[w.inc,w.exp]));
+  bars.innerHTML=weeks.map(w=>{
+    const hi=Math.max(4,(w.inc/max)*100), he=Math.max(4,(w.exp/max)*100);
+    return `<div style="flex:1;display:flex;gap:2px;align-items:flex-end;height:100%">
+      <div class="chart-bar" style="height:${hi}%" title="доход"></div>
+      <div class="chart-bar exp" style="height:${he}%" title="расход"></div>
+    </div>`;
+  }).join('');
+  labels.innerHTML=weeks.map(w=>`<span>${w.label}</span>`).join('');
+}
+
+function renderBudgets(){
+  const s=S(); const list=document.getElementById('budget-list');
+  if(!s.budgets.length){ list.innerHTML='<div class="empty">Лимитов нет</div>'; return; }
+  const monthAgo=Date.now()-30*86400000;
+  list.innerHTML=s.budgets.map((b,i)=>{
+    let spent=0;
+    s.transactions.forEach(t=>{
+      if(t.type==='expense' && t.category===b.category && (t.date||0)>=monthAgo)
+        spent+=toBYN(t.amount,t.currency||'BYN');
+    });
+    const limit=toBYN(b.limit,b.currency||'BYN');
+    const pct=limit>0?Math.min(100,spent/limit*100):0;
+    const over=spent>limit;
+    return `<div class="item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between">
+        <div class="item-title">${b.category}</div>
+        <button class="btn-icon danger" type="button" data-act="del-budget" data-i="${i}">✕</button>
+      </div>
+      <div class="item-sub">${format(spent)} / ${format(limit)} ${over?'⚠️ превышен':''}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${over?'var(--danger)':'var(--accent)'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAchievements(){
+  const s=S();
+  document.getElementById('ach-grid').innerHTML=ACHIEVEMENTS.map(a=>{
+    const on=s.achievements.includes(a.id);
+    return `<div class="ach ${on?'unlocked':''}"><div class="em">${a.em}</div><div class="nm">${a.name}</div></div>`;
+  }).join('');
+}
+
+function renderProfiles(){
+  const list=document.getElementById('profile-list');
+  list.innerHTML=Object.values(app.profiles).map(p=>`
+    <div class="item" style="cursor:pointer" data-act="switch-profile" data-id="${p.id}">
+      <div class="item-info">
+        <div class="item-title">${p.avatar||'👤'} ${p.name} ${p.id===app.activeId?'✓':''}</div>
+        <div class="item-sub">Создан ${new Date(p.createdAt).toLocaleDateString('ru-RU')}</div>
+      </div>
+      ${p.id!==app.activeId?`<button class="btn-icon danger" type="button" data-act="del-profile" data-id="${p.id}">✕</button>`:''}
+    </div>`).join('');
+}
+
+function renderAdvice(c){
+  const st=getStatus(c);
+  document.getElementById('advice-content').innerHTML=`
+    <div class="insight">Статус: <b>${st.label}</b> (ур. ${st.level})</div>
+    <div class="insight good">Цель — пассивный доход ≥ расходов. Кликер — мотивация, цифры — реальность.</div>`;
+}
+
+/* ===== Actions via event delegation ===== */
+document.body.addEventListener('click', e=>{
+  const btn=e.target.closest('[data-act]');
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  const act=btn.dataset.act;
+  const i=parseInt(btn.dataset.i);
+  const id=btn.dataset.id;
+  const s=S();
+
+  if(act==='del-tx'){
+    showConfirm('Удалить операцию?',()=>{ pushUndo('удаление операции',s); s.transactions.splice(i,1); saveApp(); renderAll(); });
+  }
+  if(act==='del-asset'){
+    showConfirm('Удалить актив?',()=>{ pushUndo('удаление актива',s); s.assets.splice(i,1); saveApp(); renderAll(); });
+  }
+  if(act==='del-goal'){
+    showConfirm('Удалить цель?',()=>{ pushUndo('удаление цели',s); s.goals.splice(i,1); saveApp(); renderAll(); });
+  }
+  if(act==='reset-goal'){
+    showConfirm('Сбросить прогресс цели?',()=>{ pushUndo('сброс цели',s); s.goals[i].current=0; s.goals[i].defeated=false; saveApp(); renderAll(); });
+  }
+  if(act==='del-budget'){
+    showConfirm('Удалить лимит?',()=>{ s.budgets.splice(i,1); saveApp(); renderAll(); });
+  }
+  if(act==='switch-profile'){
+    if(id===app.activeId) return;
+    app.activeId=id; saveApp();
+    if(S().pin) showLock(); else renderAll();
+    toast('Профиль: '+S().name);
+  }
+  if(act==='del-profile'){
+    showConfirm('Удалить профиль «'+(app.profiles[id]?.name||'')+'»?',()=>{
+      delete app.profiles[id]; saveApp(); renderAll(); toast('Профиль удалён');
+    });
+  }
+});
+
+/* ===== Arena ===== */
+function openArena(i){ arenaIdx=i; const g=S().goals[i]; if(!g||g.defeated) return; clickPower=1; openModal('arena'); }
+function setClickPower(p){
+  clickPower=p;
+  document.querySelectorAll('.click-power-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.p)===p));
+}
+function hitClass(p){ return p>=100?'hit-legend':p>=50?'hit-epic':p>=10?'hit-rare':p>=5?'hit-strong':'hit-simple'; }
+function dmgColor(p){ return p>=100?'#fbbf24':p>=50?'#c084fc':p>=10?'#60a5fa':p>=5?'#93c5fd':'#f1f5f9'; }
+function doClick(){
+  const s=S(); const g=s.goals[arenaIdx]; if(!g||g.defeated) return;
+  const rem=g.target-(g.current||0); if(rem<=0) return;
+  const dmg=Math.min(clickPower,rem);
+  pushUndo('урон',s);
+  g.current=(g.current||0)+dmg;
+  const boss=document.getElementById('arena-boss');
+  if(boss){ boss.classList.remove('hit-simple','hit-strong','hit-rare','hit-epic','hit-legend'); void boss.offsetWidth; boss.classList.add(hitClass(clickPower)); }
+  const wrap=document.getElementById('arena-wrap');
+  if(wrap){
+    const f=document.createElement('div'); f.className='damage-float'; f.textContent='-'+dmg;
+    f.style.color=dmgColor(clickPower); f.style.fontSize=clickPower>=50?'1.6rem':'1.2rem';
+    f.style.left=(35+Math.random()*30)+'%'; f.style.top='28%'; wrap.appendChild(f); setTimeout(()=>f.remove(),800);
+  }
+  const hpLeft=Math.max(0,g.target-g.current);
+  const bar=document.getElementById('arena-hp-fill'), text=document.getElementById('arena-hp-text');
+  if(bar) bar.style.width=(g.target>0?Math.max(0,hpLeft/g.target*100):0)+'%';
+  if(text) text.textContent='HP: '+hpLeft.toLocaleString('ru-RU')+' / '+g.target.toLocaleString('ru-RU');
+  if(g.current>=g.target){ g.defeated=true; saveApp(); setTimeout(()=>{ closeModal(); renderAll(); showLoot(g); },400); }
+  else saveApp();
+}
+function showLoot(g){
+  const e=ENEMIES[g.enemy]||ENEMIES.rat;
+  const advice=LOOT[Math.floor(Math.random()*LOOT.length)];
+  document.getElementById('modal-content').innerHTML=`<div class="loot-screen">
+    <div class="loot-emoji">🎁</div><div class="loot-title">ПОБЕДА!</div>
+    <div style="font-size:2.5rem">${e.emoji}</div><div style="font-weight:700">${e.name} повержен</div>
+    <div class="loot-advice">${advice}</div>
+    <button class="btn btn-primary" onclick="closeModal()">Забрать лут</button>
+  </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+/* ===== Modals ===== */
+function openModal(type){
+  const c=document.getElementById('modal-content'); let h='';
+  const s=S();
+
+  if(type==='tx'){
+    h=`<h3>Операция</h3>
+    <div class="tabs"><button class="tab tab-income active is-on" id="tx-type-income" onclick="setTxType('income')">＋ Доход</button>
+      <button class="tab tab-expense" id="tx-type-expense" onclick="setTxType('expense')">− Расход</button></div>
+    <input type="hidden" id="m-tx-type" value="income">
+    <div class="form-group"><label>Сумма</label><input type="number" id="m-tx-amount" inputmode="decimal" value="${(window._txPrefill&&window._txPrefill.amount)!=null?window._txPrefill.amount:''}"></div>
+    <div class="form-group"><label>Валюта</label><select id="m-tx-cur"><option>BYN</option><option>USD</option><option>EUR</option><option>USDT</option></select></div>
+    <div class="form-group"><label>Категория</label><select id="m-tx-cat">
+      <option>Зарплата</option><option>Подработка</option><option>Продукты</option><option>Транспорт</option>
+      <option>Жильё</option><option>Развлечения</option><option>Подписки</option><option>Другое</option></select></div>
+    <div class="form-group"><label>Заметка</label><input type="text" id="m-tx-note" value="${(window._txPrefill&&window._txPrefill.note)||''}"></div>
+    <div class="form-group"><label><input type="checkbox" id="m-tx-rec"> Повторяющаяся (каждый месяц)</label></div>
+    <button class="btn btn-primary" onclick="addTx()">Сохранить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='liability'){
+    h=`<h3>Пассив (долг)</h3>
+    <div class="form-group"><label>Название</label><input type="text" id="m-a-name" placeholder="Кредит, долг…"></div>
+    <input type="hidden" id="m-a-type" value="liability">
+    <div class="form-group"><label>Сумма долга</label><input type="number" id="m-a-value" inputmode="decimal"></div>
+    <div class="form-group"><label>Валюта</label><select id="m-a-cur"><option>BYN</option><option>USD</option><option>EUR</option><option>USDT</option></select></div>
+    <input type="hidden" id="m-a-rate" value="">
+    <input type="hidden" id="m-a-passive" value="0">
+    <button class="btn btn-primary btn-expense" onclick="addAsset()">Сохранить долг</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='asset'){
+    h=`<h3>Актив</h3>
+    <div class="form-group"><label>Название</label><input type="text" id="m-a-name"></div>
+    <div class="form-group"><label>Тип</label><select id="m-a-type" onchange="this.style.borderColor=this.value==='liability'?'#ef4444':'#22c55e'">
+      <option value="asset">🟢 Актив (плюс)</option><option value="liability">🔴 Долг (минус)</option></select></div>
+    <div class="form-group"><label>Сумма</label><input type="number" id="m-a-value" inputmode="decimal"></div>
+    <div class="form-group"><label>Валюта</label><select id="m-a-cur"><option>BYN</option><option>USD</option><option>EUR</option><option>USDT</option></select></div>
+    <div class="form-group"><label>% годовых (если вклад / инвестиции)</label><input type="number" id="m-a-rate" value="" inputmode="decimal" placeholder="пусто = без пассива"></div>
+    <div class="form-group"><label>Или фиксированный доход / мес</label><input type="number" id="m-a-passive" value="0" inputmode="decimal" placeholder="0"></div>
+    <p style="font-size:.75rem;color:var(--muted);margin:-4px 0 12px">Пассив в приложении появится только если указан % или доход/мес. Просто накопления без % — не пассив.</p>
+    <button class="btn btn-primary" onclick="addAsset()">Сохранить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='goal'){
+    selectedEnemy='rat'; goalMode='normal';
+    h=`<h3>Цель</h3>
+    <div class="tabs"><button class="tab active" id="goal-mode-normal" onclick="setGoalMode('normal')">Обычная</button>
+      <button class="tab" id="goal-mode-battle" onclick="setGoalMode('battle')">⚔️ Битва</button></div>
+    <div class="form-group"><label>Название</label><input type="text" id="m-g-name"></div>
+    <div class="form-group"><label>Сумма (HP)</label><input type="number" id="m-g-target" inputmode="decimal"></div>
+    <div class="form-group"><label>Уже есть</label><input type="number" id="m-g-current" value="0" inputmode="decimal"></div>
+    <div class="form-group"><label>Валюта</label><select id="m-g-cur"><option>BYN</option><option>USD</option><option>EUR</option><option>USDT</option></select></div>
+    <div id="enemy-select" class="hidden"><label style="font-size:.8rem;color:var(--muted)">Противник</label>
+      <div class="enemy-grid">${Object.entries(ENEMIES).map(([k,e])=>`<div class="enemy-opt ${k==='rat'?'selected':''}" data-enemy="${k}" onclick="selectEnemy('${k}')"><span>${e.emoji}</span>${e.name}</div>`).join('')}</div>
+    </div>
+    <button class="btn btn-primary" onclick="addGoal()">Сохранить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='progress'){
+    h=`<h3>Прогресс</h3>
+    <div class="form-group"><label>Сумма</label><input type="number" id="m-p-amount" inputmode="decimal"></div>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn btn-secondary" onclick="document.getElementById('m-p-amount').value=50">50</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('m-p-amount').value=100">100</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('m-p-amount').value=500">500</button>
+    </div>
+    <button class="btn btn-primary" onclick="confirmProgress()">Добавить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='arena'){
+    const g=s.goals[arenaIdx]; const e=ENEMIES[g.enemy]||ENEMIES.rat;
+    const hpLeft=Math.max(0,g.target-(g.current||0));
+    const hpPct=g.target>0?Math.max(0,hpLeft/g.target*100):0;
+    h=`<div class="arena" id="arena-wrap">
+      <div style="font-size:.85rem;color:var(--muted)">${g.name}</div>
+      <div class="arena-boss" id="arena-boss" onclick="doClick()">${e.emoji}</div>
+      <div style="font-weight:700">${e.name}</div>
+      <div class="hp-bar"><div class="hp-fill" id="arena-hp-fill" style="width:${hpPct}%"></div></div>
+      <div id="arena-hp-text" style="font-size:.9rem;margin-bottom:8px">HP: ${hpLeft.toLocaleString('ru-RU')} / ${g.target.toLocaleString('ru-RU')}</div>
+      <div style="font-size:.8rem;color:var(--muted)">Сила клика</div>
+      <div class="click-power-row">
+        <button class="click-power-btn active" data-p="1" onclick="setClickPower(1)">1</button>
+        <button class="click-power-btn" data-p="5" onclick="setClickPower(5)">5</button>
+        <button class="click-power-btn" data-p="10" onclick="setClickPower(10)">10</button>
+        <button class="click-power-btn" data-p="50" onclick="setClickPower(50)">50</button>
+        <button class="click-power-btn" data-p="100" onclick="setClickPower(100)">100</button>
+      </div>
+      <p style="font-size:.75rem;color:var(--muted);margin:8px 0 16px">1 обычный · 5 сильный · 10 редкий · 50 эпик · 100 легенда</p>
+      <button class="btn btn-secondary" onclick="closeModal();renderAll()">Закрыть</button>
+    </div>`;
+  }
+  if(type==='profile'){
+    h=`<h3>Профиль</h3>
+    <div class="form-group"><label>Имя</label><input type="text" id="m-pr-name" value="${(s.name||'').replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Аватар</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto">
+        ${AVATARS.map(a=>`<button type="button" class="btn btn-secondary" style="font-size:1.3rem;padding:6px 8px;min-width:44px"
+          onclick="document.getElementById('m-pr-avatar').value='${a}';this.parentElement.querySelectorAll('button').forEach(b=>b.style.outline='none');this.style.outline='2px solid var(--accent)'">${a}</button>`).join('')}
+      </div>
+      <input type="hidden" id="m-pr-avatar" value="${s.avatar||''}">
+    </div>
+    <div class="form-group"><label>Девиз</label><input type="text" id="m-pr-motto" value="${(s.motto||'').replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Зарплата (BYN)</label><input type="number" id="m-pr-salary" value="${s.salary||0}" inputmode="decimal"></div>
+    <div class="form-group"><label>% годовых по умолчанию</label><input type="number" id="m-pr-rate" value="${s.annualRate!=null?s.annualRate:8}" inputmode="decimal" placeholder="8"></div>
+    <p style="font-size:.75rem;color:var(--muted);margin:-4px 0 12px">Пассив = капитал × этот % ÷ 12 (если у актива нет своей ставки)</p>
+    <div class="form-group"><label>PIN (4 цифры, пусто = без PIN)</label><input type="password" id="m-pr-pin" maxlength="4" inputmode="numeric" placeholder="${s.pin?'••••':'не задан'}"></div>
+    <button class="btn btn-primary" onclick="saveProfile()">Сохранить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+  if(type==='budget'){
+    h=`<h3>Лимит категории</h3>
+    <div class="form-group"><label>Категория</label><select id="m-b-cat">
+      <option>Продукты</option><option>Транспорт</option><option>Жильё</option><option>Развлечения</option>
+      <option>Подписки</option><option>Одежда</option><option>Другое</option></select></div>
+    <div class="form-group"><label>Лимит / мес</label><input type="number" id="m-b-limit" inputmode="decimal"></div>
+    <div class="form-group"><label>Валюта</label><select id="m-b-cur"><option>BYN</option><option>USD</option><option>EUR</option></select></div>
+    <button class="btn btn-primary" onclick="addBudget()">Сохранить</button>
+    <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal()">Отмена</button>`;
+  }
+
+  c.innerHTML=h;
+  document.getElementById('modal').classList.add('show');
+  if(type==='tx' && window._txPrefill){
+    if(window._txPrefill.asExpense) setTxType('expense');
+    const cat=document.getElementById('m-tx-cat');
+    if(cat && window._txPrefill.category){
+      for(const o of cat.options){ if(o.value===window._txPrefill.category){ cat.value=o.value; break; } }
+    }
+    window._txPrefill=null;
+  }
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+
+function setTxType(t){
+  document.getElementById('m-tx-type').value=t;
+  const inc=document.getElementById('tx-type-income');
+  const exp=document.getElementById('tx-type-expense');
+  if(inc){ inc.classList.toggle('active',t==='income'); inc.classList.toggle('is-on',t==='income'); }
+  if(exp){ exp.classList.toggle('active',t==='expense'); exp.classList.toggle('is-on',t==='expense'); }
+  const saveBtn=document.querySelector('#modal-content .btn-primary');
+  if(saveBtn){
+    saveBtn.classList.toggle('btn-income',t==='income');
+    saveBtn.classList.toggle('btn-expense',t==='expense');
+    saveBtn.textContent = t==='income' ? 'Сохранить доход' : 'Сохранить расход';
+  }
+}
+function setGoalMode(m){
+  goalMode=m;
+  document.getElementById('goal-mode-normal').classList.toggle('active',m==='normal');
+  document.getElementById('goal-mode-battle').classList.toggle('active',m==='battle');
+  document.getElementById('enemy-select').classList.toggle('hidden',m!=='battle');
+}
+function selectEnemy(k){
+  selectedEnemy=k;
+  document.querySelectorAll('.enemy-opt').forEach(el=>el.classList.toggle('selected',el.dataset.enemy===k));
+}
+
+function addTx(){
+  const amount=parseFloat(document.getElementById('m-tx-amount').value);
+  if(!amount||amount<=0){ toast('Введи сумму'); return; }
+  const s=S(); pushUndo('операция',s);
+  s.transactions.push({
+    type:document.getElementById('m-tx-type').value, amount,
+    currency:document.getElementById('m-tx-cur').value,
+    category:document.getElementById('m-tx-cat').value,
+    note:document.getElementById('m-tx-note').value,
+    recurring:document.getElementById('m-tx-rec').checked,
+    date:Date.now()
+  });
+  saveApp(); closeModal(); renderAll();
+}
+function addAsset(){
+  const name=document.getElementById('m-a-name').value.trim();
+  const value=parseFloat(document.getElementById('m-a-value').value);
+  if(!name||!value){ toast('Заполни поля'); return; }
+  const s=S(); pushUndo('актив',s);
+  const rateVal = document.getElementById('m-a-rate').value;
+  s.assets.push({
+    name, type:document.getElementById('m-a-type').value, value,
+    currency:document.getElementById('m-a-cur').value,
+    rate: rateVal==='' ? null : (parseFloat(rateVal)||0),
+    passive:parseFloat(document.getElementById('m-a-passive').value)||0
+  });
+  saveApp(); closeModal(); renderAll();
+}
+function addGoal(){
+  const name=document.getElementById('m-g-name').value.trim();
+  const target=parseFloat(document.getElementById('m-g-target').value);
+  if(!name||!target){ toast('Заполни поля'); return; }
+  const s=S(); pushUndo('цель',s);
+  s.goals.push({
+    name, target, current:parseFloat(document.getElementById('m-g-current').value)||0,
+    currency:document.getElementById('m-g-cur').value,
+    isBattle:goalMode==='battle', enemy:goalMode==='battle'?selectedEnemy:null, defeated:false
+  });
+  saveApp(); closeModal(); renderAll();
+}
+function confirmProgress(){
+  const s=S(); const g=s.goals[arenaIdx];
+  const val=parseFloat(document.getElementById('m-p-amount').value);
+  if(!val||val<=0){ toast('Сумма > 0'); return; }
+  pushUndo('прогресс',s);
+  g.current=(g.current||0)+val;
+  if(g.isBattle && g.current>=g.target){ g.defeated=true; closeModal(); saveApp(); renderAll(); showLoot(g); return; }
+  saveApp(); closeModal(); renderAll();
+}
+function addBudget(){
+  const limit=parseFloat(document.getElementById('m-b-limit').value);
+  if(!limit){ toast('Укажи лимит'); return; }
+  S().budgets.push({
+    category:document.getElementById('m-b-cat').value,
+    limit, currency:document.getElementById('m-b-cur').value
+  });
+  saveApp(); closeModal(); renderAll();
+}
+function saveProfile(){
+  const s=S();
+  s.name=document.getElementById('m-pr-name').value.trim()||s.name;
+  const av=document.getElementById('m-pr-avatar').value; if(av) s.avatar=av;
+  s.motto=document.getElementById('m-pr-motto').value.trim();
+  s.salary=parseFloat(document.getElementById('m-pr-salary').value)||0;
+  const ar=parseFloat(document.getElementById('m-pr-rate').value);
+  s.annualRate = isNaN(ar) ? 8 : ar;
+  const pin=document.getElementById('m-pr-pin').value;
+  if(pin!=='') s.pin=pin.length===4?pin:'';
+  saveApp(); closeModal(); renderAll(); toast('Профиль сохранён');
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===id));
+  const txBar=document.querySelector('.tx-bottom-bar');
+  const asBar=document.getElementById('assets-bottom-actions');
+  const goalBtn=document.getElementById('btn-goal-add');
+  if(txBar) txBar.style.display = id==='tx' ? 'flex' : 'none';
+  if(asBar) asBar.style.display = id==='assets' ? 'flex' : 'none';
+  if(goalBtn) goalBtn.classList.toggle('visible', id==='goals');
+}
+
+function finishOnboarding(){
+  const p=emptyProfile(document.getElementById('ob-name').value.trim()||'Игрок');
+  p.salary=parseFloat(document.getElementById('ob-salary').value)||0;
+  p.pin=document.getElementById('ob-pin').value||'';
+  const nw=parseFloat(document.getElementById('ob-networth').value)||0;
+  if(nw) p.assets.push({name:'Стартовый капитал',type:'asset',value:Math.abs(nw),currency:'BYN',passive:0});
+  app.profiles[p.id]=p; app.activeId=p.id; saveApp();
+  document.getElementById('onboarding').classList.add('hidden');
+  renderAll(); fetchRates();
+}
+function startNewProfile(){
+  showConfirm('Создать новый профиль? Текущий сохранится.',()=>{
+    document.getElementById('onboarding').classList.remove('hidden');
+  });
+}
+function resetAllData(){
+  showConfirm('Удалить ВСЕ профили и данные?',()=>{
+    localStorage.removeItem('ff_app_v5'); localStorage.removeItem('ff_state_v4'); location.reload();
+  });
+}
+
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(app,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='finance_freedom_backup_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  toast('Бэкап скачан');
+}
+function importFile(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      if(file.name.endsWith('.json')){
+        const d=JSON.parse(ev.target.result);
+        if(d.profiles){ app=d; saveApp(); location.reload(); }
+        else toast('Неверный формат JSON');
+      } else toast('Используй JSON бэкап');
+    }catch(err){ toast('Ошибка импорта'); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* PIN */
+function showLock(){
+  pinBuffer='';
+  document.getElementById('lock-name').textContent=S().name||'';
+  document.getElementById('lock-screen').classList.remove('hidden');
+  document.getElementById('pin-error').textContent='';
+  updatePinDots();
+  const pad=document.getElementById('pin-pad');
+  pad.innerHTML=[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>{
+    if(k==='') return '<div></div>';
+    return `<button type="button" data-pin="${k}">${k}</button>`;
+  }).join('');
+}
+function updatePinDots(){
+  document.querySelectorAll('#pin-dots .pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinBuffer.length));
+}
+document.getElementById('pin-pad').addEventListener('click',e=>{
+  const b=e.target.closest('[data-pin]'); if(!b) return;
+  const k=b.dataset.pin;
+  if(k==='⌫'){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); return; }
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=k; updatePinDots();
+  if(pinBuffer.length===4){
+    if(pinBuffer===S().pin){
+      document.getElementById('lock-screen').classList.add('hidden');
+      renderAll();
+    } else {
+      document.getElementById('pin-error').textContent='Неверный PIN';
+      pinBuffer=''; updatePinDots();
+    }
+  }
+});
+
+document.getElementById('currencySwitch').addEventListener('click',e=>{
+  if(e.target.tagName==='BUTTON' && S()){
+    S().currency=e.target.dataset.cur; saveApp(); renderAll();
+  }
+});
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+
+
+/* ===== QR SCAN ===== */
+let qrStream=null, qrRaf=0, qrScanning=false;
+
+function openQrScan(){
+  if(typeof jsQR==='undefined'){ toast('Библиотека QR не загрузилась'); return; }
+  const c=document.getElementById('modal-content');
+  c.innerHTML=`<h3>Скан QR чека</h3>
+    <p class="qr-hint">Наведи камеру на QR чека. Если сумма найдётся — откроется расход. Если нет — введёшь вручную.</p>
+    <div class="qr-video-wrap">
+      <video id="qr-video" playsinline autoplay muted></video>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+    </div>
+    <p id="qr-status" style="font-size:.8rem;color:var(--muted);text-align:center;min-height:1.2em">Ищем камеру…</p>
+    <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeQrScan()">Отмена</button>`;
+  document.getElementById('modal').classList.add('show');
+  startQrCamera();
+}
+
+function closeQrScan(){
+  stopQrCamera();
+  closeModal();
+}
+
+function stopQrCamera(){
+  qrScanning=false;
+  if(qrRaf){ cancelAnimationFrame(qrRaf); qrRaf=0; }
+  if(qrStream){ qrStream.getTracks().forEach(t=>t.stop()); qrStream=null; }
+}
+
+async function startQrCamera(){
+  const status=document.getElementById('qr-status');
+  const video=document.getElementById('qr-video');
+  if(!video) return;
+  try{
+    qrStream=await navigator.mediaDevices.getUserMedia({
+      audio:false,
+      video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }
+    });
+    video.srcObject=qrStream;
+    await video.play();
+    if(status) status.textContent='Наведи на QR…';
+    qrScanning=true;
+    tickQr();
+  }catch(err){
+    console.error(err);
+    if(status) status.textContent='Нет доступа к камере. Разреши в настройках Safari.';
+    toast('Нет доступа к камере');
+  }
+}
+
+function tickQr(){
+  if(!qrScanning) return;
+  const video=document.getElementById('qr-video');
+  const canvas=document.getElementById('qr-canvas');
+  if(!video||!canvas||video.readyState!==video.HAVE_ENOUGH_DATA){
+    qrRaf=requestAnimationFrame(tickQr);
+    return;
+  }
+  const w=video.videoWidth, h=video.videoHeight;
+  if(!w||!h){ qrRaf=requestAnimationFrame(tickQr); return; }
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(video,0,0,w,h);
+  const img=ctx.getImageData(0,0,w,h);
+  const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+  if(code&&code.data){
+    onQrDetected(code.data);
+    return;
+  }
+  qrRaf=requestAnimationFrame(tickQr);
+}
+
+function parseAmountFromQr(text){
+  if(!text) return null;
+  // Common patterns: sum=12.34, s=12.34, amount, "ИТОГ 12.34", BYN amounts
+  const patterns=[
+    /(?:sum|s|amount|total|summa|итог|сумма)[=:\s]*([0-9]+[.,][0-9]{1,2})/i,
+    /(?:sum|s)=([0-9]+(?:\.[0-9]+)?)/i,
+    /([0-9]+[.,][0-9]{2})\s*(?:BYN|руб|byn)?/i,
+  ];
+  for(const re of patterns){
+    const m=text.match(re);
+    if(m){
+      const n=parseFloat(m[1].replace(',','.'));
+      if(!isNaN(n)&&n>0&&n<1000000) return n;
+    }
+  }
+  // trailing number with decimals
+  const all=[...text.matchAll(/([0-9]+[.,][0-9]{2})/g)].map(m=>parseFloat(m[1].replace(',','.'))).filter(n=>n>0&&n<1000000);
+  if(all.length) return Math.max(...all);
+  return null;
+}
+
+function onQrDetected(raw){
+  stopQrCamera();
+  const amount=parseAmountFromQr(raw);
+  const status=document.getElementById('qr-status');
+  if(status) status.textContent='QR прочитан';
+  toast(amount!=null ? ('Сумма: '+amount) : 'QR прочитан, сумму введи вручную');
+
+  let note='Чек QR';
+  if(raw.startsWith('http')) note='Чек: '+raw.slice(0,60)+(raw.length>60?'…':'');
+  else if(raw.length<80) note='QR: '+raw;
+
+  window._txPrefill={
+    amount: amount!=null ? amount : '',
+    asExpense:true,
+    category:'Продукты',
+    note: note
+  };
+  // reopen as expense form
+  setTimeout(()=>openModal('tx'), 200);
+}
+
+// stop camera when modal closes
+const _closeModalOrig=closeModal;
+closeModal=function(){
+  stopQrCamera();
+  _closeModalOrig();
+};
+
+function saveFreedomRate(){
+  const s=S(); if(!s) return;
+  const el=document.getElementById('freedom-rate-input');
+  if(!el) return;
+  const v=parseFloat(el.value);
+  s.annualRate = isNaN(v) ? 8 : v;
+  saveApp();
+  // soft re-render home numbers without full page jump
+  renderAll();
+}
+
+function calcYield(){
+  const sum=parseFloat(document.getElementById('yield-sum')?.value)||0;
+  const rate=parseFloat(document.getElementById('yield-rate')?.value)||0;
+  const year=sum*(rate/100);
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=sum&&rate?format(v):'—'; };
+  set('yield-year', year);
+  set('yield-month', year/12);
+  set('yield-day', year/365);
+  set('yield-hour', year/365/24);
+}
+
+/* Init */
+loadApp();
+if(!app.activeId || !app.profiles[app.activeId]){
+  document.getElementById('onboarding').classList.remove('hidden');
+} else if(S().pin){
+  showLock();
+  fetchRates();
+} else {
+  renderAll();
+  fetchRates();
+}
+const _txBar=document.querySelector('.tx-bottom-bar');
+const _asBar=document.getElementById('assets-bottom-actions');
+if(_txBar) _txBar.style.display='none';
+if(_asBar) _asBar.style.display='none';
+</script>
+</body>
+</html>
